@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.telephony.SmsManager;
+import android.util.Log;
 
 import java.util.List;
 
@@ -18,9 +19,10 @@ public class SMS {
 
     private BroadcastReceiver sentStatusReceiver, deliveredStatusReceiver;
     private Context context;
-    private static final String EXTRAS = "extras";
+    private static final String EXTRAS = "EXTRA_DATA";
     private SentListener sentListener;
     private DeliveryListener deliveryListener;
+    private final String TAG = "SMS.JAVA";
 
     public SMS(Context context){
         this.context = context;
@@ -88,9 +90,14 @@ public class SMS {
             sentListener.onError(extraValue,"Extra value not set");
         } else {
 
+            Log.e(TAG,"AttemptSend: "+extraValue+" "+EXTRAS);
+
             SmsManager sms = SmsManager.getDefault();
             // if message length is too long messages are divided
             List<String> messages = sms.divideMessage(message);
+
+            Log.e(TAG,"TotalSplits: "+messages.size()+" "+extraValue+" "+EXTRAS);
+
             for (String msg : messages) {
 
                 Intent sent_ = new Intent("SMS_SENT");
@@ -105,11 +112,14 @@ public class SMS {
 
                 sms.sendTextMessage(phone, null, msg, sentIntent, deliveredIntent);
 
+                Log.e(TAG,"Chunk: "+msg+"\n"+extraValue+" "+EXTRAS);
+
             }
         }
     }
 
     private void startListen(){
+        Log.e(TAG,"Start started");
 
         sentStatusReceiver=new BroadcastReceiver() {
 
@@ -117,6 +127,8 @@ public class SMS {
             public void onReceive(Context arg0, Intent arg1) {
                 String s = "Unknown Error";
                 String num = arg1.getStringExtra(EXTRAS);
+
+                Log.e(TAG,"OnSent: "+num+" "+EXTRAS);
 
                 switch (getResultCode()) {
                     case Activity.RESULT_OK:
@@ -152,6 +164,8 @@ public class SMS {
             public void onReceive(Context arg0, Intent arg1) {
                 String s = "Message Not Delivered";
                 String num = arg1.getStringExtra(EXTRAS);
+
+                Log.e(TAG,"OnDelivered: "+num+" "+EXTRAS);
 
                 switch(getResultCode()) {
                     case Activity.RESULT_OK:
